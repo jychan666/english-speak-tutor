@@ -296,7 +296,7 @@
 | 录音 | MediaRecorder API |
 | 评分引擎 | 客户端 Levenshtein 距离 + 关键词匹配 + 规则语法检查 |
 | 后端 | Express.js + TypeScript |
-| 数据库 | SQLite via better-sqlite3 |
+| 数据库 | JSON 文件存储（单用户无需 SQLite） |
 | 图表 | Chart.js + vue-chartjs |
 
 ## 8. 成功指标
