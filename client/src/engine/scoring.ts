@@ -1,6 +1,5 @@
 import type { PartAPassage, PartBScenario, PartCStory } from '@/types/exam'
 import type {
-  DiagnosticReport,
   PartResult,
   PronunciationScore,
   RolePlayScore,
@@ -14,73 +13,12 @@ import {
   tokenize,
   wordOverlapRatio,
 } from '@/utils/text'
+import { generateDiagnosticReport, type DiagnosticHint } from './diagnosticEngine'
 
-type DiagnosticDimension = 'pronunciation' | 'fluency' | 'grammar' | 'vocabulary' | 'content'
-
-interface DiagnosticInput {
-  part: 'A' | 'B' | 'C'
-  score: number
-  hints: Array<{ dimension: DiagnosticDimension; detail: string; suggestion: string }>
-}
-
-const dimensionArticleMap: Record<DiagnosticDimension, string[]> = {
-  pronunciation: ['pr-th-sound', 'pr-vw', 'pr-linking'],
-  fluency: ['tp-stuck-rescue', 'tp-time-management', 'qa-part-a-30sec'],
-  grammar: ['gr-question-order', 'gr-tense-safe', 'gr-connectors'],
-  vocabulary: ['vo-campus', 'vo-travel', 'vo-environment'],
-  content: ['tm-part-c-opening', 'tm-part-c-transition', 'tp-prep-minute'],
-}
-
-function toLevel(score: number): DiagnosticReport['overallLevel'] {
-  if (score >= 85) return 'excellent'
-  if (score >= 72) return 'good'
-  if (score >= 60) return 'fair'
-  return 'needs-work'
-}
-
-function buildDiagnostic(input: DiagnosticInput): DiagnosticReport {
-  const strengths: string[] = []
-  const weaknesses: string[] = []
-  const specificErrors = input.hints.map((hint) => ({
-    type: hint.dimension,
-    detail: hint.detail,
-    suggestion: hint.suggestion,
-    relatedArticleId: dimensionArticleMap[hint.dimension][0],
-  }))
-
-  if (input.score >= 80) {
-    strengths.push('本次输出较稳定，核心信息表达清楚。')
-  }
-
-  const seenDimensions = new Set<DiagnosticDimension>()
-  for (const hint of input.hints) {
-    if (!seenDimensions.has(hint.dimension)) {
-      weaknesses.push(hint.detail)
-      seenDimensions.add(hint.dimension)
-    }
-  }
-
-  const recommendedArticles = Array.from(seenDimensions)
-    .flatMap((dimension) => dimensionArticleMap[dimension])
-    .slice(0, 4)
-
-  const recommendedPractice = [
-    input.part === 'A' ? '再练一篇 Part A 同难度材料' : '',
-    input.part === 'B' ? '重做一组 Part B 限时提问' : '',
-    input.part === 'C' ? '再做一篇 Part C 关键词复述' : '',
-  ].filter(Boolean)
-
-  return {
-    overallLevel: toLevel(input.score),
-    strengths,
-    weaknesses,
-    specificErrors,
-    recommendedArticles,
-    recommendedPractice,
-  }
-}
-
-function findMismatchedWords(expected: string[], spoken: string[]): Array<{ expected: string; recognized: string }> {
+function findMismatchedWords(
+  expected: string[],
+  spoken: string[]
+): Array<{ expected: string; recognized: string }> {
   const mismatches: Array<{ expected: string; recognized: string }> = []
   const len = Math.min(expected.length, spoken.length)
   for (let i = 0; i < len; i += 1) {
@@ -94,7 +32,9 @@ function findMismatchedWords(expected: string[], spoken: string[]): Array<{ expe
   return mismatches
 }
 
-function collectPhonemeHints(mismatches: Array<{ expected: string; recognized: string }>): string[] {
+function collectPhonemeHints(
+  mismatches: Array<{ expected: string; recognized: string }>
+): string[] {
   const hints = new Set<string>()
   for (const pair of mismatches) {
     if (pair.expected.includes('th')) hints.add('/theta/')
@@ -120,14 +60,16 @@ export function scorePartA(args: {
   const lengthPenalty = spokenWords.length < expectedWords.length * 0.6 ? 18 : 0
   const fluency = Math.round(clamp(92 - speedPenalty - lengthPenalty))
 
-  const avgSentenceLength = normalizeText(args.transcript).split(' ').length / Math.max(args.transcript.split('.').length, 1)
+  const avgSentenceLength =
+    normalizeText(args.transcript).split(' ').length /
+    Math.max(args.transcript.split('.').length, 1)
   const intonation = Math.round(clamp(62 + avgSentenceLength * 2.2))
 
   const overall = Math.round(accuracy * 0.5 + fluency * 0.3 + intonation * 0.2)
   const mismatchedWords = findMismatchedWords(expectedWords, spokenWords)
   const errorPhonemes = collectPhonemeHints(mismatchedWords)
 
-  const hints: DiagnosticInput['hints'] = []
+  const hints: DiagnosticHint[] = []
   if (accuracy < 70) {
     hints.push({
       dimension: 'pronunciation',
@@ -159,7 +101,10 @@ export function scorePartA(args: {
       wordsTotal: expectedWords.length,
       wordsCorrect: Math.round(expectedWords.length * overlap),
       wordsPerMinute,
-      pauseCount: Math.max(0, Math.round((args.durationSeconds - spokenWords.length / 2.1) / 2)),
+      pauseCount: Math.max(
+        0,
+        Math.round((args.durationSeconds - spokenWords.length / 2.1) / 2)
+      ),
       avgConfidence: clamp(Math.round(overlap * 100 - 6), 40, 98),
       mismatchedWords,
       errorPhonemes,
@@ -170,7 +115,7 @@ export function scorePartA(args: {
     part: 'A',
     score,
     transcript: args.transcript,
-    diagnosticReport: buildDiagnostic({
+    diagnosticReport: generateDiagnosticReport({
       part: 'A',
       score: overall,
       hints,
@@ -186,9 +131,10 @@ function grammarIssuesForQuestion(text: string): string[] {
     issues.push('未作答')
     return issues
   }
-  const startsWithQuestionWord = /^(what|where|when|why|how|who|which|can|could|do|does|did|is|are|will|would|should)\b/.test(
-    trimmed
-  )
+  const startsWithQuestionWord =
+    /^(what|where|when|why|how|who|which|can|could|do|does|did|is|are|will|would|should)\b/.test(
+      trimmed
+    )
   if (!startsWithQuestionWord) {
     issues.push('疑问句开头不规范')
   }
@@ -224,10 +170,13 @@ export function scorePartB(args: {
     }
   })
 
-  const avgGrammarIssue = questionChecks.reduce((sum, item) => sum + item.grammarIssues.length, 0) / questionChecks.length
+  const avgGrammarIssue =
+    questionChecks.reduce((sum, item) => sum + item.grammarIssues.length, 0) /
+    questionChecks.length
   const questionGrammar = Math.round(clamp(95 - avgGrammarIssue * 18))
   const questionRelevance = Math.round(
-    questionChecks.reduce((sum, item) => sum + item.keywordMatch, 0) / questionChecks.length
+    questionChecks.reduce((sum, item) => sum + item.keywordMatch, 0) /
+      questionChecks.length
   )
   const answerAccuracy = Math.round(
     answerChecks.reduce((sum, item) => sum + item.keywordMatch, 0) / answerChecks.length
@@ -238,10 +187,13 @@ export function scorePartB(args: {
   const answerFluency = Math.round(clamp(90 - Math.abs(wordsPerMinute - 118) * 0.32))
 
   const overall = Math.round(
-    questionGrammar * 0.28 + questionRelevance * 0.26 + answerAccuracy * 0.28 + answerFluency * 0.18
+    questionGrammar * 0.28 +
+      questionRelevance * 0.26 +
+      answerAccuracy * 0.28 +
+      answerFluency * 0.18
   )
 
-  const hints: DiagnosticInput['hints'] = []
+  const hints: DiagnosticHint[] = []
   if (questionGrammar < 70) {
     hints.push({
       dimension: 'grammar',
@@ -280,7 +232,7 @@ export function scorePartB(args: {
     part: 'B',
     score,
     transcript: mergedSpeech,
-    diagnosticReport: buildDiagnostic({
+    diagnosticReport: generateDiagnosticReport({
       part: 'B',
       score: overall,
       hints,
@@ -300,17 +252,24 @@ export function scorePartC(args: {
   transcript: string
   durationSeconds: number
 }): PartResult {
-  const coveredPoints = args.story.keyPoints.filter((point) => keyPointCovered(point, args.transcript))
+  const coveredPoints = args.story.keyPoints.filter((point) =>
+    keyPointCovered(point, args.transcript)
+  )
   const missedPoints = args.story.keyPoints.filter((point) => !coveredPoints.includes(point))
 
-  const contentCoverage = Math.round((coveredPoints.length / args.story.keyPoints.length) * 100)
+  const contentCoverage = Math.round(
+    (coveredPoints.length / args.story.keyPoints.length) * 100
+  )
 
   const connectors = ['first', 'then', 'after', 'finally', 'because', 'however', 'so', 'therefore']
   const connectorScore = keywordMatchPercentage(connectors, args.transcript)
   const coherence = Math.round(clamp(58 + connectorScore * 0.42))
 
   const transcriptTokens = tokenize(args.transcript)
-  const uniqueRatio = transcriptTokens.length === 0 ? 0 : new Set(transcriptTokens).size / transcriptTokens.length
+  const uniqueRatio =
+    transcriptTokens.length === 0
+      ? 0
+      : new Set(transcriptTokens).size / transcriptTokens.length
   const languageUse = Math.round(clamp(52 + uniqueRatio * 72))
 
   const wordsPerMinute = estimateWordsPerMinute(args.transcript, args.durationSeconds)
@@ -320,7 +279,7 @@ export function scorePartC(args: {
     contentCoverage * 0.4 + coherence * 0.22 + languageUse * 0.2 + fluency * 0.18
   )
 
-  const hints: DiagnosticInput['hints'] = []
+  const hints: DiagnosticHint[] = []
   if (contentCoverage < 70) {
     hints.push({
       dimension: 'content',
@@ -362,7 +321,7 @@ export function scorePartC(args: {
     part: 'C',
     score,
     transcript: args.transcript,
-    diagnosticReport: buildDiagnostic({
+    diagnosticReport: generateDiagnosticReport({
       part: 'C',
       score: overall,
       hints,

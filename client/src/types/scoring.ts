@@ -88,4 +88,6 @@ export interface ExamAttempt {
   partResults: PartResult[]
   totalScore: number
   totalDuration: number
+  recordings?: Partial<Record<'A' | 'B' | 'C', string>>
+  partDurations?: Partial<Record<'A' | 'B' | 'C', number>>
 }

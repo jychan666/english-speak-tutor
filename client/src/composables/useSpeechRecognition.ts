@@ -30,6 +30,7 @@ export function useSpeechRecognition() {
     }
     const instance = new Ctor()
     instance.lang = 'en-US'
+    instance.continuous = true
     instance.interimResults = true
     instance.maxAlternatives = 1
     return instance
