@@ -17,8 +17,8 @@ function isValidAttempt(input: unknown): input is StoredAttempt {
 
 const router = Router()
 
-router.get('/progress', (_req, res) => {
-  const attempts = listAttempts(100)
+router.get('/progress', (req, res) => {
+  const attempts = listAttempts(req.deviceToken, 100)
 
   const avgScore = attempts.length
     ? Math.round(attempts.reduce((sum, item) => sum + item.totalScore, 0) / attempts.length)
@@ -57,7 +57,7 @@ router.post('/progress/attempts', (req, res) => {
   }
 
   const attempt = req.body
-  upsertAttempt(attempt)
+  upsertAttempt(req.deviceToken, attempt)
 
   res.json({
     success: true,

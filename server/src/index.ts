@@ -1,6 +1,8 @@
 import cors from 'cors'
 import express from 'express'
 import { initDbSchema } from './db/database'
+import { deviceTokenMiddleware } from './middleware/deviceToken'
+import contentRoutes from './routes/content'
 import progressRoutes from './routes/progress'
 import skillsRoutes from './routes/skills'
 
@@ -10,6 +12,8 @@ const port = 3001
 initDbSchema()
 
 app.use(cors())
+app.use(deviceTokenMiddleware)
+app.use('/api/content', contentRoutes)
 app.use(express.json({ limit: '1mb' }))
 
 app.get('/api/health', (_req, res) => {

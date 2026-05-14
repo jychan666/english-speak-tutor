@@ -1,6 +1,6 @@
 import type { ExamAttempt } from '@/types/scoring'
 
-const CACHE_PREFIX = 'english-speak-attempt:'
+const CACHE_PREFIX = 'es-attempt:'
 
 export function saveAttemptToCache(attempt: ExamAttempt): void {
   if (typeof sessionStorage === 'undefined') {

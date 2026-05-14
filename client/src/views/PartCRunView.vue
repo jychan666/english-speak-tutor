@@ -180,124 +180,514 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="card head">
+  <!-- ======== 页面头部 ======== -->
+  <section class="card partc-head">
     <h1>Part C - 故事复述</h1>
     <p class="text-secondary">选择故事后将自动播放两遍并进入准备倒计时。</p>
   </section>
 
-  <section v-if="!selectedStory" class="grid">
-    <article v-for="item in partCStories" :key="item.id" class="card story-card">
-      <h2>{{ item.title }}</h2>
-      <p class="text-secondary">难度 {{ item.difficulty }} · {{ item.wordCount }} 词</p>
-      <p class="text-secondary">提示：{{ item.frameworkHint }}</p>
+  <!-- ======== 故事选择态 ======== -->
+  <section v-if="!selectedStory" class="story-grid">
+    <article
+      v-for="item in partCStories"
+      :key="item.id"
+      class="story-select-card"
+    >
+      <span class="story-badge">Part C</span>
+      <h2 class="story-title">{{ item.title }}</h2>
+      <p class="story-difficulty">
+        <span class="stars">{{ '⭐'.repeat(item.difficulty) }}</span>
+        <span class="word-count">{{ item.wordCount }} 词</span>
+      </p>
+      <p class="story-hint">{{ item.frameworkHint }}</p>
       <button class="btn-primary" @click="chooseStory(item.id)">选择故事</button>
     </article>
   </section>
 
+  <!-- ======== 练习态 ======== -->
   <section v-else class="run-area">
-    <article class="card">
-      <h2>{{ selectedStory.title }}</h2>
-      <p class="text-secondary">框架提示：{{ selectedStory.frameworkHint }}</p>
-      <p class="status">{{ statusMessage }}</p>
-      <p v-if="flowStage === 'prepare'" class="timer">还剩 {{ prepareRemaining }} 秒</p>
-      <p v-if="flowStage === 'retell' || flowStage === 'done'" class="timer">
-        复述用时：{{ retellElapsed }} 秒
-      </p>
-      <div class="actions">
+    <!-- 故事标题 + 框架提示 -->
+    <article class="story-header-card">
+      <div class="story-color-bar"></div>
+      <div class="story-header-body">
+        <h2 class="story-header-title">{{ selectedStory.title }}</h2>
+        <p class="story-meta">
+          <span class="stars">{{ '⭐'.repeat(selectedStory.difficulty) }}</span>
+          <span class="word-count">{{ selectedStory.wordCount }} 词</span>
+        </p>
+        <div class="framework-card">
+          <span class="framework-label">📋 框架提示</span>
+          <p class="framework-text">{{ selectedStory.frameworkHint }}</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- 故事原文（折叠） -->
+    <details class="story-text-details">
+      <summary class="story-text-btn">📖 查看故事原文</summary>
+      <div class="story-text-content">
+        <p>{{ selectedStory.storyText }}</p>
+      </div>
+    </details>
+
+    <!-- 播放控制 -->
+    <article class="play-controls">
+      <h3 class="controls-title">🎧 听力播放</h3>
+      <div class="play-buttons">
+        <button
+          class="play-btn play-btn-first"
+          @click="playStory(1)"
+          :disabled="flowStage === 'playing-first' || flowStage === 'playing-second'"
+        >
+          🔊 播放故事（第一遍）
+        </button>
+        <button
+          class="play-btn play-btn-second"
+          @click="playStory(0.9)"
+          :disabled="flowStage === 'playing-first' || flowStage === 'playing-second'"
+        >
+          🔉 播放故事（第二遍 · 慢速）
+        </button>
+      </div>
+      <p class="status-msg">{{ statusMessage }}</p>
+    </article>
+
+    <!-- 计时器 + 手动控制 -->
+    <article class="timer-controls">
+      <div class="timer-display">
+        <div v-if="flowStage === 'prepare'" class="timer-box timer-prepare">
+          <span class="timer-label-text">准备倒计时</span>
+          <span class="timer-big">{{ prepareRemaining }}</span>
+          <span class="timer-unit-text">秒</span>
+        </div>
+        <div v-if="flowStage === 'retell' || flowStage === 'done'" class="timer-box timer-retell">
+          <span class="timer-label-text">复述用时</span>
+          <span class="timer-big">{{ retellElapsed }}</span>
+          <span class="timer-unit-text">秒</span>
+        </div>
+      </div>
+      <div class="manual-actions">
         <button class="btn-secondary" @click="replayStoryTwice">手动重播两遍</button>
         <button class="btn-secondary" @click="startPrepareManually">手动开始准备倒计时</button>
         <button class="btn-secondary" @click="startRetellManually">手动进入复述</button>
-        <button class="btn-secondary" @click="stopRetell" :disabled="flowStage !== 'retell'">停止复述</button>
+        <button
+          class="btn-secondary"
+          @click="stopRetell"
+          :disabled="flowStage !== 'retell'"
+        >
+          停止复述
+        </button>
       </div>
-      <p v-if="!recognition.supported" class="warn">
-        浏览器语音识别不可用，请直接在下方 textarea 输入复述内容。
-      </p>
     </article>
 
-    <article class="card">
-      <h3>实时转写</h3>
-      <p class="preview">{{ recognition.transcript || '（等待语音输入）' }}</p>
-      <p class="preview interim" v-if="recognition.interimTranscript">
+    <p v-if="!recognition.supported" class="voice-warn">
+      浏览器语音识别不可用，请直接在下方文本框输入复述内容。
+    </p>
+
+    <!-- 实时转写 + 手动输入 -->
+    <article class="transcript-area card">
+      <h3 class="transcript-title">🎙 实时转写</h3>
+      <div class="transcript-preview">
+        {{ recognition.transcript || '（等待语音输入）' }}
+      </div>
+      <p v-if="recognition.interimTranscript" class="transcript-interim">
         {{ recognition.interimTranscript }}
       </p>
-      <h3>手动补充</h3>
+
+      <h3 class="transcript-title">✏️ 手动补充</h3>
       <textarea
         v-model="manualTranscript"
         rows="10"
         placeholder="可手动补充复述文本，或直接完整输入你的复述..."
-      />
-      <button class="btn-primary" @click="submit" :disabled="!canSubmit">提交并生成诊断</button>
+      ></textarea>
+
+      <button
+        class="btn-primary btn-submit"
+        @click="submit"
+        :disabled="!canSubmit"
+      >
+        提交并生成诊断
+      </button>
     </article>
   </section>
 </template>
 
 <style scoped>
-.head {
+/* ======== 页面头部 ======== */
+.partc-head {
   display: grid;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
-.grid {
-  margin-top: 16px;
+/* ======== 故事选择网格 ======== */
+.story-grid {
+  margin-top: var(--space-md);
   display: grid;
-  gap: 12px;
+  gap: var(--space-md);
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.story-card {
+.story-select-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   display: grid;
-  gap: 8px;
+  gap: var(--space-sm);
+  transition: transform var(--duration-normal) var(--ease-out-expo),
+              box-shadow var(--duration-normal) var(--ease-out-expo);
+}
+.story-select-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.run-area {
-  margin-top: 16px;
-  display: grid;
-  gap: 12px;
+.story-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: #ffedd5;
+  color: #c2410c;
 }
 
-.status {
-  margin-top: 8px;
-  font-weight: 600;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.timer {
-  margin-top: 8px;
+.story-title {
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
-.warn {
+.story-difficulty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.stars {
+  letter-spacing: 2px;
+}
+
+.word-count {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.story-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* ======== 练习区域 ======== */
+.run-area {
+  margin-top: var(--space-md);
+  display: grid;
+  gap: var(--space-md);
+}
+
+/* ======== 故事标题头卡片 ======== */
+.story-header-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.story-color-bar {
+  height: 3px;
+  width: 100%;
+  background: var(--color-part-c);
+}
+
+.story-header-body {
+  padding: var(--space-lg);
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.story-header-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.story-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* 框架提示卡片 */
+.framework-card {
+  margin-top: var(--space-xs);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.framework-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #c2410c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.framework-text {
+  color: #7c2d12;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+/* ======== 故事原文折叠 ======== */
+.story-text-details {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.story-text-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--color-surface-hover);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background var(--duration-fast);
+}
+.story-text-btn::-webkit-details-marker {
+  display: none;
+}
+.story-text-btn:hover {
+  background: #e6f0ec;
+  color: var(--color-primary);
+}
+
+.story-text-content {
+  padding: var(--space-md);
+  background: #fafafa;
+  border-top: 1px solid var(--color-border);
+}
+.story-text-content p {
+  font-size: var(--text-sm);
+  line-height: 1.9;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+}
+
+/* ======== 播放控制 ======== */
+.play-controls {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.controls-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.play-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 2px solid;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+.play-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play-btn-first {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+.play-btn-first:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.play-btn-second {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+.play-btn-second:hover:not(:disabled) {
+  background: #fef9c3;
+  border-color: #fbbf24;
+}
+
+.status-msg {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 8px 12px;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+}
+
+/* ======== 计时器 + 手动控制 ======== */
+.timer-controls {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.timer-display {
+  display: flex;
+  justify-content: center;
+}
+
+.timer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 28px;
+  border-radius: var(--radius-lg);
+  border: 2px solid;
+  min-width: 140px;
+}
+
+.timer-prepare {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.timer-retell {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.timer-label-text {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timer-big {
+  font-size: var(--text-hero);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-unit-text {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+/* ======== 语音警告 ======== */
+.voice-warn {
   color: #92400e;
   background: #ffedd5;
   border: 1px solid #fdba74;
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 10px 14px;
+  font-size: var(--text-sm);
 }
 
-.preview {
-  background: #f8fafc;
-  border-radius: var(--radius-sm);
+/* ======== 转写 + 输入区域 ======== */
+.transcript-area {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.transcript-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.transcript-preview {
+  background: #fafafa;
   border: 1px solid var(--color-border);
-  padding: 10px;
-}
-
-.interim {
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-size: var(--text-sm);
+  line-height: 1.7;
   color: var(--color-text-secondary);
+  min-height: 60px;
 }
 
-textarea {
+.transcript-interim {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+  padding: 0 var(--space-sm);
+}
+
+.transcript-area textarea {
   width: 100%;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 10px;
+  padding: var(--space-md);
   resize: vertical;
   font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  transition: border-color var(--duration-fast);
+}
+.transcript-area textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.btn-submit {
+  justify-self: start;
+}
+
+/* ======== 响应式 ======== */
+@media (max-width: 767px) {
+  .play-buttons {
+    flex-direction: column;
+  }
+
+  .manual-actions {
+    flex-direction: column;
+  }
+
+  .manual-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
+  }
 }
 </style>
-

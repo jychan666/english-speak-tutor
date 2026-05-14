@@ -2,8 +2,8 @@ import { Router } from 'express'
 import { listAttempts } from '../db/database'
 import type { StoredAttempt } from '../types/attempt'
 
-function readAttempts(): StoredAttempt[] {
-  return listAttempts(200)
+function readAttempts(token?: string): StoredAttempt[] {
+  return listAttempts(token, 200)
 }
 
 function average(values: number[]): number {
@@ -13,8 +13,8 @@ function average(values: number[]): number {
 
 const router = Router()
 
-router.get('/skills/profile', (_req, res) => {
-  const attempts = readAttempts()
+router.get('/skills/profile', (req, res) => {
+  const attempts = readAttempts(req.deviceToken)
 
   const pronunciation: number[] = []
   const fluency: number[] = []

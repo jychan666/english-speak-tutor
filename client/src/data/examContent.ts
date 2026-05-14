@@ -58,7 +58,7 @@ export const partAPassages: PartAPassage[] = [
     wordCount: 84,
     difficulty: 2,
     topic: '城市发展',
-    focusPhonemes: ['/tr/', '/dr/', '/pl/'],
+    focusPhonemes: ['/tr/', '/pr/', '/pl/'],
     relatedLearnArticles: ['vo-travel', 'vo-environment', 'pr-linking'],
   },
   {
@@ -82,7 +82,7 @@ export const partAPassages: PartAPassage[] = [
     wordCount: 92,
     difficulty: 3,
     topic: '科技教育',
-    focusPhonemes: ['/ai/', '/st/', '/sk/'],
+    focusPhonemes: ['/ai/', '/st/', '/sch/'],
     relatedLearnArticles: ['gr-chinglish-fix', 'pr-intonation', 'tp-cant-hear'],
   },
   {
@@ -519,6 +519,66 @@ export const partBScenarios: PartBScenario[] = [
     ],
     grammarFocus: ['preference expression', 'goal expression'],
     relatedLearnArticles: ['tp-prep-minute', 'gr-chinglish-fix', 'tm-part-b-answer'],
+  },
+  {
+    id: 'pb-study-method',
+    type: 'partB',
+    scenario: '你是学生，英语成绩不理想，向老师请教如何改进学习方法。',
+    role: 'Student',
+    questionsToAsk: [
+      {
+        id: 'ask-1',
+        chinesePrompt: '老师，您能给我一些提高英语的建议吗？',
+        englishReference: 'Could you give me some advice on improving my English?',
+        keywords: ['advice', 'improving', 'English'],
+      },
+      {
+        id: 'ask-2',
+        chinesePrompt: '我每天应该花多少时间练习口语？',
+        englishReference: 'How much time should I spend on speaking practice every day?',
+        keywords: ['how much time', 'speaking practice', 'every day'],
+      },
+      {
+        id: 'ask-3',
+        chinesePrompt: '您有什么推荐的课外阅读材料吗？',
+        englishReference: 'Do you have any recommended reading materials for extra practice?',
+        keywords: ['recommended', 'reading materials', 'extra practice'],
+      },
+    ],
+    questionsToAnswer: [
+      {
+        id: 'answer-1',
+        englishQuestion: 'What do you find most difficult in learning English?',
+        referenceAnswer: 'I find it hard to speak fluently without pausing too much.',
+        keywords: ['hard', 'fluently', 'pausing'],
+      },
+      {
+        id: 'answer-2',
+        englishQuestion: 'How do you usually study vocabulary?',
+        referenceAnswer: 'I usually write new words in a notebook and review them on weekends.',
+        keywords: ['notebook', 'review', 'weekends'],
+      },
+      {
+        id: 'answer-3',
+        englishQuestion: 'Have you tried watching English videos?',
+        referenceAnswer: 'Yes, but I often rely on subtitles and miss the listening practice.',
+        keywords: ['subtitles', 'miss', 'listening'],
+      },
+      {
+        id: 'answer-4',
+        englishQuestion: 'What is your goal for this term?',
+        referenceAnswer: 'My goal is to pass the speaking exam with at least eighty points.',
+        keywords: ['goal', 'pass', 'eighty points'],
+      },
+      {
+        id: 'answer-5',
+        englishQuestion: 'How can you make English learning a daily habit?',
+        referenceAnswer: 'I can set a fixed time each day and use an app to track my progress.',
+        keywords: ['fixed time', 'app', 'track progress'],
+      },
+    ],
+    grammarFocus: ['giving advice', 'study habits vocabulary'],
+    relatedLearnArticles: ['qa-part-a-30sec', 'tp-prep-minute', 'gr-chinglish-fix'],
   },
 ]
 

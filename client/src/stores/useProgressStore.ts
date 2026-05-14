@@ -4,7 +4,7 @@ import type { ExamAttempt } from '@/types/scoring'
 import type { SkillProfile } from '@/types/learning'
 import { api } from '@/utils/api'
 
-const LOCAL_ATTEMPTS_KEY = 'english-speak-attempts'
+const LOCAL_ATTEMPTS_KEY = 'es-attempts'
 
 function loadLocalAttempts(): ExamAttempt[] {
   if (typeof localStorage === 'undefined') {
