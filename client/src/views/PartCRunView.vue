@@ -206,6 +206,20 @@ onBeforeUnmount(() => {
 
   <!-- ======== 练习态 ======== -->
   <section v-else class="run-area">
+    <!-- 梗概 + 关键词（真实考试屏显） -->
+    <article class="card outline-card">
+      <h2 class="outline-title">📋 故事梗概</h2>
+      <p class="outline-text">{{ selectedStory.chineseOutline }}</p>
+      <div class="keywords-row">
+        <span class="keyword-label">关键词：</span>
+        <span
+          v-for="kw in selectedStory.keywords"
+          :key="kw.en"
+          class="keyword-tag"
+        >{{ kw.en }}（{{ kw.zh }}）</span>
+      </div>
+    </article>
+
     <!-- 故事标题 + 框架提示 -->
     <article class="story-header-card">
       <div class="story-color-bar"></div>
@@ -383,6 +397,50 @@ onBeforeUnmount(() => {
 }
 
 /* ======== 练习区域 ======== */
+/* 梗概 + 关键词 */
+.outline-card {
+  padding: var(--space-lg);
+  display: grid;
+  gap: var(--space-sm);
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.outline-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.outline-text {
+  font-size: var(--text-base);
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.keywords-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-xs);
+}
+
+.keyword-label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.keyword-tag {
+  display: inline-flex;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  background: #fff;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+
 .run-area {
   margin-top: var(--space-md);
   display: grid;

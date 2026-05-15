@@ -1,4 +1,4 @@
-import { onUnmounted, ref } from 'vue'
+import { onUnmounted, ref, computed } from 'vue'
 
 export interface SpeechOptions {
   rate?: number
@@ -7,36 +7,61 @@ export interface SpeechOptions {
   volume?: number
 }
 
+function estimateWordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length
+}
+
 export function useSpeechSynthesis() {
   const supported =
     typeof window !== 'undefined' && 'speechSynthesis' in window
   const speaking = ref(false)
   const paused = ref(false)
+  const progress = ref(0)
+  const duration = ref(0)
 
   let currentUtterance: SpeechSynthesisUtterance | null = null
+  let progressTimer: ReturnType<typeof setInterval> | null = null
+
+  function clearProgressTimer() {
+    if (progressTimer) {
+      clearInterval(progressTimer)
+      progressTimer = null
+    }
+  }
+
+  function startProgressTracking(text: string, rate: number) {
+    clearProgressTimer()
+    progress.value = 0
+    const wordCount = estimateWordCount(text)
+    const estimatedDurationMs = (wordCount / (rate * 2.5)) * 1000
+    duration.value = Math.max(estimatedDurationMs, 1000)
+    const tickInterval = 80
+    let elapsed = 0
+    progressTimer = setInterval(() => {
+      if (paused.value) return
+      elapsed += tickInterval
+      progress.value = Math.min(Math.round((elapsed / duration.value) * 100), 95)
+    }, tickInterval)
+  }
 
   function stop() {
-    if (!supported) {
-      return
-    }
+    if (!supported) return
     window.speechSynthesis.cancel()
     currentUtterance = null
     speaking.value = false
     paused.value = false
+    progress.value = 0
+    clearProgressTimer()
   }
 
   function pause() {
-    if (!supported) {
-      return
-    }
+    if (!supported) return
     window.speechSynthesis.pause()
     paused.value = true
   }
 
   function resume() {
-    if (!supported) {
-      return
-    }
+    if (!supported) return
     window.speechSynthesis.resume()
     paused.value = false
   }
@@ -47,9 +72,7 @@ export function useSpeechSynthesis() {
     }
 
     const content = text.trim()
-    if (!content) {
-      return Promise.resolve()
-    }
+    if (!content) return Promise.resolve()
 
     stop()
 
@@ -63,23 +86,26 @@ export function useSpeechSynthesis() {
       utterance.onstart = () => {
         speaking.value = true
         paused.value = false
+        startProgressTracking(content, utterance.rate)
       }
-      utterance.onpause = () => {
-        paused.value = true
-      }
-      utterance.onresume = () => {
-        paused.value = false
-      }
+      utterance.onpause = () => { paused.value = true }
+      utterance.onresume = () => { paused.value = false }
       utterance.onend = () => {
         speaking.value = false
         paused.value = false
+        progress.value = 100
+        duration.value = 0
         currentUtterance = null
+        clearProgressTimer()
         resolve()
       }
       utterance.onerror = () => {
         speaking.value = false
         paused.value = false
+        progress.value = 0
+        duration.value = 0
         currentUtterance = null
+        clearProgressTimer()
         reject(new Error('语音播放失败'))
       }
 
@@ -88,7 +114,10 @@ export function useSpeechSynthesis() {
     })
   }
 
+  const durationSeconds = computed(() => Math.round(duration.value / 1000))
+
   onUnmounted(() => {
+    clearProgressTimer()
     stop()
   })
 
@@ -96,6 +125,9 @@ export function useSpeechSynthesis() {
     supported,
     speaking,
     paused,
+    progress,
+    duration,
+    durationSeconds,
     speak,
     stop,
     pause,

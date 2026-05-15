@@ -291,6 +291,13 @@ onBeforeUnmount(() => {
       </div>
     </article>
 
+    <!-- 对话原文 -->
+    <article class="card dialogue-card">
+      <h2 class="dialogue-title">📞 听对话（仅播放 1 遍）</h2>
+      <p class="text-secondary dialogue-hint">先仔细听这段对话，然后根据场景进行三问五答。</p>
+      <div class="dialogue-text">{{ selectedScenario.dialogue }}</div>
+    </article>
+
     <!-- 提问环节 -->
     <article class="qa-section">
       <h2 class="qa-section-title">📝 提问环节（3 题）</h2>
@@ -539,6 +546,34 @@ onBeforeUnmount(() => {
 .qa-section {
   display: grid;
   gap: var(--space-md);
+}
+
+/* 对话原文卡 */
+.dialogue-card {
+  padding: var(--space-lg);
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.dialogue-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.dialogue-hint {
+  font-size: var(--text-sm);
+}
+
+.dialogue-text {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  font-size: var(--text-sm);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  font-style: italic;
+  color: var(--color-text);
 }
 
 .qa-section-title {

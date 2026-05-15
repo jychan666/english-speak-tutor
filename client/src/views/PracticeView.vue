@@ -13,44 +13,26 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
 
   <!-- ======== Part 专项训练卡片 ======== -->
   <section class="modes-grid">
-    <!-- Part A -->
-    <article class="mode-card mode-a">
-      <div class="mode-color-bar bar-a"></div>
-      <div class="mode-body">
-        <span class="mode-badge badge-a">Part A</span>
-        <h2 class="mode-title">模仿朗读</h2>
-        <p class="mode-desc">
-          题量 {{ partAPassages.length }} 篇，重点提升发音准确度、流利度和语调。
-        </p>
-        <router-link class="btn-primary mode-btn" to="/practice/part-a">开始 Part A</router-link>
-      </div>
-    </article>
+    <router-link to="/practice/part-a" class="mode-card">
+      <span class="mode-badge badge-a">Part A</span>
+      <h2 class="mode-title">模仿朗读</h2>
+      <p class="mode-desc">题量 {{ partAPassages.length }} 篇，重点提升发音准确度、流利度和语调。</p>
+      <span class="mode-arrow">→</span>
+    </router-link>
 
-    <!-- Part B -->
-    <article class="mode-card mode-b">
-      <div class="mode-color-bar bar-b"></div>
-      <div class="mode-body">
-        <span class="mode-badge badge-b">Part B</span>
-        <h2 class="mode-title">角色扮演</h2>
-        <p class="mode-desc">
-          题量 {{ partBScenarios.length }} 组，重点训练提问语法和回答相关性。
-        </p>
-        <router-link class="btn-primary mode-btn" to="/practice/part-b">开始 Part B</router-link>
-      </div>
-    </article>
+    <router-link to="/practice/part-b" class="mode-card">
+      <span class="mode-badge badge-b">Part B</span>
+      <h2 class="mode-title">角色扮演</h2>
+      <p class="mode-desc">题量 {{ partBScenarios.length }} 组，重点训练提问语法和回答相关性。</p>
+      <span class="mode-arrow">→</span>
+    </router-link>
 
-    <!-- Part C -->
-    <article class="mode-card mode-c">
-      <div class="mode-color-bar bar-c"></div>
-      <div class="mode-body">
-        <span class="mode-badge badge-c">Part C</span>
-        <h2 class="mode-title">故事复述</h2>
-        <p class="mode-desc">
-          题量 {{ partCStories.length }} 篇，重点提升关键信息覆盖和叙述连贯性。
-        </p>
-        <router-link class="btn-primary mode-btn" to="/practice/part-c">开始 Part C</router-link>
-      </div>
-    </article>
+    <router-link to="/practice/part-c" class="mode-card">
+      <span class="mode-badge badge-c">Part C</span>
+      <h2 class="mode-title">故事复述</h2>
+      <p class="mode-desc">题量 {{ partCStories.length }} 篇，重点提升关键信息覆盖和叙述连贯性。</p>
+      <span class="mode-arrow">→</span>
+    </router-link>
   </section>
 
   <!-- ======== 模拟考试区 ======== -->
@@ -61,9 +43,10 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
       <p class="text-secondary">共 {{ mockExams.length }} 套，建议每周至少完成 1 套。</p>
     </div>
     <div class="mock-grid">
-      <article
+      <router-link
         v-for="paper in mockExams"
         :key="paper.id"
+        :to="`/mock-exam?paper=${paper.id}`"
         class="mock-card"
       >
         <span class="mock-badge">模拟卷</span>
@@ -73,13 +56,7 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
           <li class="mock-part"><span class="part-ind part-ind-b">B</span> {{ paper.partB.scenario }}</li>
           <li class="mock-part"><span class="part-ind part-ind-c">C</span> {{ paper.partC.title }}</li>
         </ul>
-        <router-link
-          class="btn-secondary mock-start-btn"
-          :to="`/mock-exam?paper=${paper.id}`"
-        >
-          开始这套
-        </router-link>
-      </article>
+      </router-link>
     </div>
   </section>
 </template>
@@ -99,38 +76,30 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
   grid-template-columns: repeat(3, 1fr);
 }
 
-/* ======== 单张模式卡片 ======== */
+/* ======== 模式卡片（整卡可点击） ======== */
 .mode-card {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform var(--duration-normal) var(--ease-out-expo),
-              box-shadow var(--duration-normal) var(--ease-out-expo);
-}
-.mode-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* 顶部 3px 全宽色条 */
-.mode-color-bar {
-  height: 3px;
-  width: 100%;
-}
-.bar-a { background: var(--color-part-a); }
-.bar-b { background: var(--color-part-b); }
-.bar-c { background: var(--color-part-c); }
-
-.mode-body {
   padding: var(--space-lg);
   display: grid;
   gap: var(--space-sm);
-  flex: 1;
+  align-content: start;
+  color: var(--color-text);
+  text-decoration: none;
+  position: relative;
+  transition: transform var(--duration-normal) var(--ease-out-expo),
+              box-shadow var(--duration-normal) var(--ease-out-expo),
+              border-color var(--duration-normal) var(--ease-out-expo);
 }
+.mode-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.mode-card:nth-child(1):hover { border-color: var(--color-part-a); }
+.mode-card:nth-child(2):hover { border-color: var(--color-part-b); }
+.mode-card:nth-child(3):hover { border-color: var(--color-part-c); }
 
 /* Part 编号徽章 */
 .mode-badge {
@@ -150,7 +119,6 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
 .mode-title {
   font-size: var(--text-xl);
   font-weight: 700;
-  color: var(--color-text);
 }
 
 .mode-desc {
@@ -159,9 +127,17 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
   line-height: 1.6;
 }
 
-.mode-btn {
-  justify-self: start;
+.mode-arrow {
+  justify-self: end;
   margin-top: var(--space-xs);
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  transition: transform var(--duration-fast) ease,
+              color var(--duration-fast) ease;
+}
+.mode-card:hover .mode-arrow {
+  transform: translateX(3px);
+  color: var(--color-primary);
 }
 
 /* ======== 模拟考试 ======== */
@@ -181,7 +157,7 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-/* 模拟卷卡片 */
+/* 模拟卷卡片（整卡可点击） */
 .mock-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -189,12 +165,15 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
   padding: var(--space-lg);
   display: grid;
   gap: var(--space-sm);
+  color: var(--color-text);
+  text-decoration: none;
   transition: transform var(--duration-normal) var(--ease-out-expo),
               box-shadow var(--duration-normal) var(--ease-out-expo);
 }
 .mock-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
 }
 
 .mock-badge {
@@ -212,7 +191,6 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
 .mock-title {
   font-size: var(--text-base);
   font-weight: 700;
-  color: var(--color-text);
 }
 
 .mock-parts {
@@ -245,11 +223,6 @@ import { mockExams, partAPassages, partBScenarios, partCStories } from '@/data/e
 .part-ind-a { background: var(--color-part-a); }
 .part-ind-b { background: var(--color-part-b); }
 .part-ind-c { background: var(--color-part-c); }
-
-.mock-start-btn {
-  justify-self: start;
-  margin-top: var(--space-xs);
-}
 
 /* ======== 响应式 ======== */
 @media (max-width: 767px) {
